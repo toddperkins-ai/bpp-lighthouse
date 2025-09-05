@@ -1,0 +1,29 @@
+{
+  "ci": {
+    "collect": {
+      "url": [
+        "https://www.bushfireprotectionandplanning.au/",
+        "https://bushfireprotectionandplanning.au/pages/bal-rating.html",
+        "https://www.bushfireprotectionandplanning.au/pages/blog.html",
+        "https://www.bushfireprotectionandplanning.au/pages/blog/bal-assessment-building-approvals.html"
+      ],
+      "numberOfRuns": 1
+    },
+    "assert": {
+      "assertions": {
+        "categories:performance": ["error", { "minScore": 0.9 }],
+        "categories:seo": ["error", { "minScore": 1 }],
+        "categories:accessibility": ["warn", { "minScore": 0.9 }],
+        "largest-contentful-paint": ["error", { "numericValue": 2500 }],
+        "total-blocking-time": ["error", { "numericValue": 200 }],
+        "cumulative-layout-shift": ["error", { "numericValue": 0.1 }],
+        "uses-text-compression": "warn",
+        "uses-responsive-images": "warn"
+      }
+    },
+    "upload": {
+      "target": "filesystem",
+      "outputDir": "./.lighthouseci"
+    }
+  }
+}
