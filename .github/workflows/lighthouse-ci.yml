@@ -1,0 +1,75 @@
+name: Lighthouse CI
+
+on:
+  # manual run button
+  workflow_dispatch:
+  # weekly schedule: 06:00 Monday Perth (AWST=UTC+8 → 22:00 Sunday UTC)
+  schedule:
+    - cron: "0 22 * * 0"
+  # (optional) run on PRs if you use this repo with code
+  pull_request: {}
+
+jobs:
+  lhci:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout (empty repo is fine)
+        uses: actions/checkout@v4
+
+      - name: Use Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.13.x
+
+      # Run LHCI but don't kill the job yet; we want to upload reports first
+      - name: Run LHCI
+        id: lhci
+        run: |
+          set +e
+          lhci autorun --config=./lighthouserc.json
+          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+          exit 0
+        continue-on-error: true
+
+      - name: Upload LHCI reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: lhci-reports
+          path: .lighthouseci/*
+          if-no-files-found: ignore
+
+      # Now fail the workflow if assertions failed
+      - name: Enforce failure on regression
+        if: steps.lhci.outputs.exitcode != '0'
+        run: exit 1
+  lhci-mobile:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install -g @lhci/cli@0.13.x
+      - name: Run LHCI (mobile)
+        id: lhci_mobile
+        run: |
+          set +e
+          lhci autorun \
+            --config=./lighthouserc.json \
+            --collect.settings.preset=mobile \
+            --collect.settings.emulatedFormFactor=mobile
+          echo "exitcode=$?" >> "$GITHUB_OUTPUT"
+          exit 0
+        continue-on-error: true
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lhci-reports-mobile
+          path: .lighthouseci/*
+          if-no-files-found: ignore
+      - name: Enforce failure on regression (mobile)
+        if: steps.lhci_mobile.outputs.exitcode != '0'
+        run: exit 1
